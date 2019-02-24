@@ -1,5 +1,6 @@
 
 # Topic Modelling Using Latent Dirichlet Allocation
+
 ## What does LDA do ?
 It represents documents as mixture of topics that spits out words with certain probabilities.
 It assumes that documents are produced in the following fashion:
@@ -568,6 +569,304 @@ npr_csv
   </tbody>
 </table>
 <p>11992 rows × 2 columns</p>
+</div>
+
+
+
+# Non Negative Matrix Factorization
+- NNMF is an unsupervised learning algroithm that performs dimensionality reduction and clustering at the same time
+- We will use TD-IDF in conjuction to our algorithm model topics accross document
+
+## General idea behinf NNMF
+- We've been given a non negative matrix of a containing our features A(Term Document Matrix), find K approximation vectors in terms of non-neagtive factors W(Basic Vectors) and H(Coefficient Matrix).
+
+### Note :
+- Basic Vetors: The topics(clusters) in the data.
+- Coefficient Matrix : The membership weights for documents relative to each topic.
+
+<img src ="NNMF_matrix.png" width ="70%" alt ="Non_neagtive metrices" />
+
+- Basically we are going to approximate that multiplication of W and H would be equal to our matrix A. For that we will calculate the objective function.
+
+<img src ="objective_function.png" width ="70%" alt ="Objective Function" />
+
+- Expectation maximization optimization to refine W and H in order to minimise the values of objective function
+
+<img src ="approximate_expectation.png" width ="70%" alt ="Approximate Expectation" />
+
+### So we'll create a Term Document Matrix with TF-IDF Vectorization
+
+<img src ="tem_document_matrix.png" width ="70%" alt ="Term Document Matrix" />
+
+### Achieving our final result
+
+<img src ="final_matrix.png" width ="70%" alt ="Target Matrix" />
+
+
+## In order to implement it we'll follow the same steps as in LDA
+
+
+```python
+import pandas as pd
+```
+
+
+```python
+npr_csv = pd.read_csv('npr.csv')
+```
+
+
+```python
+from sklearn.feature_extraction.text import TfidfVectorizer
+```
+
+
+```python
+tfid = TfidfVectorizer(max_df= 0.95, min_df= 2, stop_words= 'english')
+```
+
+
+```python
+dtm = tfid.fit_transform(npr_csv['Article'])
+```
+
+
+```python
+from sklearn.decomposition import NMF
+```
+
+
+```python
+nfm_model = NMF(n_components= 7, random_state=42)
+```
+
+
+```python
+nfm_model.fit(dtm)
+```
+
+
+
+
+    NMF(alpha=0.0, beta_loss='frobenius', init=None, l1_ratio=0.0, max_iter=200,
+      n_components=7, random_state=42, shuffle=False, solver='cd', tol=0.0001,
+      verbose=0)
+
+
+
+
+```python
+for i,topic in enumerate(nfm_model.components_):
+    print(f"The top 15 words from Topic #{i}")
+    print([tfid.get_feature_names()[i] for i in topic.argsort()[-15:]])
+    print('\n')
+    
+```
+
+    The top 15 words from Topic #0
+    ['new', 'research', 'like', 'patients', 'health', 'disease', 'percent', 'women', 'virus', 'study', 'water', 'food', 'people', 'zika', 'says']
+    
+    
+    The top 15 words from Topic #1
+    ['gop', 'pence', 'presidential', 'russia', 'administration', 'election', 'republican', 'obama', 'white', 'house', 'donald', 'campaign', 'said', 'president', 'trump']
+    
+    
+    The top 15 words from Topic #2
+    ['senate', 'house', 'people', 'act', 'law', 'tax', 'plan', 'republicans', 'affordable', 'obamacare', 'coverage', 'medicaid', 'insurance', 'care', 'health']
+    
+    
+    The top 15 words from Topic #3
+    ['officers', 'syria', 'security', 'department', 'law', 'isis', 'russia', 'government', 'state', 'attack', 'president', 'reports', 'court', 'said', 'police']
+    
+    
+    The top 15 words from Topic #4
+    ['primary', 'cruz', 'election', 'democrats', 'percent', 'party', 'delegates', 'vote', 'state', 'democratic', 'hillary', 'campaign', 'voters', 'sanders', 'clinton']
+    
+    
+    The top 15 words from Topic #5
+    ['love', 've', 'don', 'album', 'way', 'time', 'song', 'life', 'really', 'know', 'people', 'think', 'just', 'music', 'like']
+    
+    
+    The top 15 words from Topic #6
+    ['teacher', 'state', 'high', 'says', 'parents', 'devos', 'children', 'college', 'kids', 'teachers', 'student', 'education', 'schools', 'school', 'students']
+    
+    
+
+
+
+```python
+topic_results = nfm_model.transform(dtm)
+```
+
+
+```python
+npr_csv['Topic']  = topic_results.argmax(axis=1)
+```
+
+
+```python
+npr_csv.head()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Article</th>
+      <th>Topic</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>In the Washington of 2016, even when the polic...</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Donald Trump has used Twitter  —   his prefe...</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Donald Trump is unabashedly praising Russian...</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Updated at 2:50 p. m. ET, Russian President Vl...</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>From photography, illustration and video, to d...</td>
+      <td>6</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+## Labeling our topics
+
+
+```python
+my_topic_dict = {0 : 'Health', 1:'Election', 2: 'Legislation',3:'Politics', 4: 'Election', 5: 'Music',6: 'Education' }
+npr_csv['Topic Label'] = npr_csv['Topic'].map(my_topic_dict)
+```
+
+
+```python
+npr_csv[0:10]
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Article</th>
+      <th>Topic</th>
+      <th>Topic Label</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>In the Washington of 2016, even when the polic...</td>
+      <td>1</td>
+      <td>Election</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Donald Trump has used Twitter  —   his prefe...</td>
+      <td>1</td>
+      <td>Election</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Donald Trump is unabashedly praising Russian...</td>
+      <td>1</td>
+      <td>Election</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Updated at 2:50 p. m. ET, Russian President Vl...</td>
+      <td>3</td>
+      <td>Politics</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>From photography, illustration and video, to d...</td>
+      <td>6</td>
+      <td>Education</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>I did not want to join yoga class. I hated tho...</td>
+      <td>5</td>
+      <td>Music</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>With a   who has publicly supported the debunk...</td>
+      <td>0</td>
+      <td>Health</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>I was standing by the airport exit, debating w...</td>
+      <td>0</td>
+      <td>Health</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>If movies were trying to be more realistic, pe...</td>
+      <td>0</td>
+      <td>Health</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Eighteen years ago, on New Year’s Eve, David F...</td>
+      <td>5</td>
+      <td>Music</td>
+    </tr>
+  </tbody>
+</table>
 </div>
 
 
